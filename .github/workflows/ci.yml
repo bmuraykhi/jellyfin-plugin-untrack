@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build (Release)
+        run: dotnet build Jellyfin.Plugin.UntrackShow.csproj -c Release
+
+      - name: Check web script syntax
+        run: node --check Web/untrack.js
+
+      - name: Check meta.json
+        run: |
+          jq -e '.name and .guid and .version and .targetAbi' meta.json > /dev/null
+          guid=$(jq -r .guid meta.json)
+          if ! grep -q "$guid" Plugin.cs; then
+            echo "::error file=meta.json::guid $guid isn't the plugin id in Plugin.cs."
+            exit 1
+          fi
