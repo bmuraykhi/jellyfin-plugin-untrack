@@ -16,11 +16,19 @@ Remove a whole show from Continue Watching and Next Up in one click.
 ## Install
 
 You need Jellyfin 12.4 and the
-[File Transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) plugin, which is in the
-`https://www.iamparadox.dev/jellyfin/plugins/manifest.json` catalog.
+[File Transformation](https://github.com/IAmParadox27/jellyfin-plugin-file-transformation) plugin. To get File
+Transformation, add its catalog the same way as in step 1 and install it from there:
+
+```
+https://www.iamparadox.dev/jellyfin/plugins/manifest.json
+```
 
 1. Dashboard → **Plugins** → **Manage Repositories** → **+**, and add
-   `https://raw.githubusercontent.com/bmuraykhi/jellyfin-plugins/main/manifest.json`
+
+   ```
+   https://raw.githubusercontent.com/bmuraykhi/jellyfin-plugins/main/manifest.json
+   ```
+
 2. **Catalog** → **Untrack Show** → **Install**
 3. Restart Jellyfin, then reload the page or reopen the app.
 
