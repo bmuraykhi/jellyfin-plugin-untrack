@@ -54,7 +54,7 @@ One-time setup. After this, updates arrive from the catalog like any other plugi
 
    It's the catalog for all my plugins, including
    [Season Subtitle Downloader](https://github.com/bmuraykhi/Sub-Jellyfin). If you have the older Sub-Jellyfin
-   catalog URL, replace it with this one.
+   catalog URL, replace it with this one: it's retired and gets no more updates.
 4. Save, then Dashboard → **Plugins** → **Catalog** → **Untrack Show** (under *General*) → **Install**
 5. Restart Jellyfin, then reload the web page (or fully close and reopen the app)
 
