@@ -42,6 +42,14 @@ that delete unwatched media will treat an untracked show as unwatched.
 It works in web browsers and the Jellyfin desktop app. Other apps don't show the option, but a show you untrack
 disappears from them too.
 
+## How it works
+
+- File Transformation adds one `<script>` tag to Jellyfin's web page as it's served, and the plugin serves that script
+  at `/UntrackShow/script`. No jellyfin-web files are changed.
+- The script adds **Untrack show** to the ⋮ menus. Picking it asks Jellyfin to mark the whole show unplayed for you
+  (`DELETE /UserPlayedItems/{showId}`), then reloads the page so the home rows update.
+- It has no settings, stores nothing and only talks to your Jellyfin server.
+
 ## License
 
 The source is under [The Unlicense](LICENSE). The built plugin links against Jellyfin's GPL-3.0 libraries, so the
