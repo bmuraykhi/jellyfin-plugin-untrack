@@ -1,0 +1,9 @@
+bin/
+obj/
+out/
+test/out/
+__pycache__/
+.vs/
+.idea/
+*.user
+dist/
