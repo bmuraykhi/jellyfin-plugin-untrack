@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  release:
+    needs: ci
+    uses: bmuraykhi/jellyfin-plugins/.github/workflows/release-plugin.yml@main
+    permissions:
+      contents: write
+    with:
+      project: Jellyfin.Plugin.UntrackShow.csproj
+      zip: untrack-show.zip
+      dotnet-version: 10.0.x
+      catalog-app-client-id: ${{ vars.CATALOG_APP_CLIENT_ID }}
+    secrets:
+      catalog-app-private-key: ${{ secrets.CATALOG_APP_PRIVATE_KEY }}

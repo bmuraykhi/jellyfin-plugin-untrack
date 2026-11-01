@@ -1,6 +1,5 @@
 {
   "category": "General",
-  "changelog": "Untrack show is also in the multi-select menu (long-press a card, then ⋮), which is how phones reach it.",
   "description": "Adds \"Untrack show\" to the episode, season and show menus in the web client and the Jellyfin phone apps. It marks the whole show unplayed for you, which removes it from Continue Watching and Next Up.",
   "guid": "b54dbd71-0824-420d-974c-b4f74ceed8f6",
   "imagePath": "icon.png",
@@ -8,6 +7,5 @@
   "overview": "Remove a whole show from Continue Watching and Next Up in one click. Requires the File Transformation plugin.",
   "owner": "Bandar",
   "targetAbi": "12.4.0.0",
-  "timestamp": "2026-11-01T12:15:00Z",
   "version": "1.0.2.0"
 }
