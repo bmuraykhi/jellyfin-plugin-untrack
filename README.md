@@ -34,16 +34,13 @@ https://www.iamparadox.dev/jellyfin/plugins/manifest.json
 
 ## Use
 
-Open the **⋮** menu of a show, season or episode and pick **Untrack show**. On a phone, long-press the card, tap **⋮**
-at the top right, then **Untrack show**. Select several cards to untrack several shows at once.
-
-<img src="docs/images/mobile.png" width="320" alt="Untrack show in the phone's multi-select menu">
+Open the **⋮** menu of a show, season or episode and pick **Untrack show**.
 
 Untracking marks every episode of the show unwatched, for you only. To bring the show back, play any episode. Tools
 that delete unwatched media will treat an untracked show as unwatched.
 
-It works in web browsers, the desktop app and the official Android and iOS apps. Native TV apps (Android TV, Fire TV,
-Swiftfin, Roku) don't show the option, but a show you untrack elsewhere disappears there too.
+It works in web browsers and the Jellyfin desktop app. Other apps don't show the option, but a show you untrack
+disappears from them too.
 
 ## Manual install
 
