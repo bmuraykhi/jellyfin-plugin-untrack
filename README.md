@@ -42,13 +42,6 @@ that delete unwatched media will treat an untracked show as unwatched.
 It works in web browsers and the Jellyfin desktop app. Other apps don't show the option, but a show you untrack
 disappears from them too.
 
-## Manual install
-
-Unzip `untrack-show.zip` from the [latest release](https://github.com/bmuraykhi/jellyfin-plugin-untrack/releases/latest)
-into an `Untrack Show_<version>` folder in Jellyfin's plugins folder (`/var/lib/jellyfin/plugins` on Linux,
-`/config/plugins` in Docker) and restart. To build it yourself with the .NET 10 SDK, run
-`dotnet publish -c Release -o bin/publish` and use the DLL with `meta.json` and `assets/icon.png`.
-
 ## License
 
 The source is under [The Unlicense](LICENSE). The built plugin links against Jellyfin's GPL-3.0 libraries, so the
