@@ -10,6 +10,7 @@
     const SUPPORTED_TYPES = ['Episode', 'Season', 'Series'];
     const MENU_BUTTONS = '[data-action="menu"], .btnCardOptions, .btnMoreCommands, .btnToggleContextMenu';
     const SELECTION_MENU_BUTTON = '.btnSelectionPanelOptions';
+    const NOTICE_KEY = 'untrackShow.notice';
 
     let pending = null;
 
@@ -140,15 +141,39 @@
             await Promise.all(Array.from(shows.keys()).map(function (seriesId) {
                 return api.ajax({ type: 'DELETE', url: api.getUrl('UserPlayedItems/' + seriesId, { userId: userId }) });
             }));
-            toast('Untracked ' + showsLabel(shows));
-            setTimeout(async function () {
-                await clearPersistedQueries();
-                window.location.reload();
-            }, 700);
         } catch (err) {
             console.error('UntrackShow: failed', err);
             toast('Could not untrack ' + showsLabel(shows));
+            return;
         }
+        try {
+            sessionStorage.setItem(NOTICE_KEY, 'Untracked ' + showsLabel(shows));
+        } catch (err) {
+            toast('Untracked ' + showsLabel(shows));
+        }
+        await clearPersistedQueries();
+        window.location.reload();
+    }
+
+    function showNotice() {
+        let text = null;
+        try {
+            text = sessionStorage.getItem(NOTICE_KEY);
+            sessionStorage.removeItem(NOTICE_KEY);
+        } catch (err) {
+            return;
+        }
+        if (!text) {
+            return;
+        }
+        const started = Date.now();
+        (function wait() {
+            if (document.querySelector('.page:not(.hide) .card') || Date.now() - started > 4000) {
+                toast(text);
+            } else {
+                setTimeout(wait, 100);
+            }
+        })();
     }
 
     function buildOption(template, label) {
@@ -225,4 +250,6 @@
             });
         });
     }).observe(document.body, { childList: true, subtree: true });
+
+    showNotice();
 })();

@@ -350,6 +350,13 @@ with sync_playwright() as p:
     page.locator(".btnSelectionPanelOptions").tap()
     option.wait_for(timeout=15000)
     check(option.inner_text().strip() == "Untrack 2 shows", "phone: two selected shows give Untrack 2 shows")
+    page.wait_for_timeout(400)
+    option.tap()
+    page.locator(".dialog", has_text="Untrack 2 shows?").locator("button", has_text="Untrack").tap(timeout=5000)
+    page.locator("text=Untracked 2 shows").wait_for(timeout=15000)
+    check(sorted(state["deletes"]) == sorted([SHOWS["maple"]["id"], SHOWS["ward"]["id"]]),
+          "phone: confirming untracks both selected shows")
+    state["deletes"].clear()
     context.close()
 
     size = {"width": 1280, "height": 720}
@@ -371,8 +378,9 @@ with sync_playwright() as p:
     page.wait_for_timeout(350)
     page.evaluate("window.__beforeUntrack = true")
     page.mouse.click(*pointer)
-    page.locator("text=Untracked Maple Street").wait_for(timeout=5000)
     page.wait_for_function("window.__beforeUntrack !== true", timeout=15000)
+    page.locator("text=Untracked Maple Street").wait_for(timeout=10000)
+    check(page.locator(".card", has_text="Ward Nine").count() > 0, "the untracked message shows once the page is back")
     wait_for_rows(page)
     page.mouse.move(1150, 640)
     page.wait_for_timeout(2500)

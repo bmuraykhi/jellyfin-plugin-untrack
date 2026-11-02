@@ -14,6 +14,10 @@ the plugin catalog.
 
 - New plugin logo with the plugin's name. It fills the wide plugin tile instead of being zoomed and cropped.
 
+### Fixed
+
+- The "Untracked" message shows once the page has reloaded, instead of disappearing after half a second.
+
 ## [1.0.2.0] – 2026-11-01
 
 First public release.
