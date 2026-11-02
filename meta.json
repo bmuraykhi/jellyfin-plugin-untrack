@@ -1,6 +1,6 @@
 {
   "category": "General",
-  "description": "Adds \"Untrack show\" to the episode, season and show menus in web browsers and the Jellyfin desktop app. It marks the whole show unplayed for you, which removes it from Continue Watching and Next Up.",
+  "description": "Adds \"Untrack show\" to the episode, season and show menus in web browsers, the Jellyfin desktop app and the Jellyfin phone apps. It marks the whole show unplayed for you, which removes it from Continue Watching and Next Up.",
   "guid": "b54dbd71-0824-420d-974c-b4f74ceed8f6",
   "imagePath": "icon.png",
   "name": "Untrack Show",

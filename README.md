@@ -37,8 +37,9 @@ Open the **⋮** menu of a show, season or episode, pick **Untrack show** and co
 Untracking marks every episode of the show unwatched, for you only. To bring the show back, play any episode. Tools
 that delete unwatched media will treat an untracked show as unwatched.
 
-It works in web browsers and the Jellyfin desktop app. Other apps don't show the option, but a show you untrack
-disappears from them too.
+It works in web browsers, the Jellyfin desktop app and the Jellyfin apps for Android and iOS. On a phone, use the **⋮**
+on the show or episode page, or long-press a card and tap **⋮**. Apps with their own interface, such as Swiftfin or
+Android TV, don't show the option, but a show you untrack disappears from them too.
 
 ## How it works
 

@@ -14,10 +14,6 @@ the plugin catalog.
 
 - New plugin logo with the plugin's name. It fills the wide plugin tile instead of being zoomed and cropped.
 
-### Fixed
-
-- The plugin description no longer says it works in the Jellyfin phone apps.
-
 ## [1.0.2.0] – 2026-11-01
 
 First public release.

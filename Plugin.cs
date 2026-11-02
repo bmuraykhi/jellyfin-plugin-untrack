@@ -24,5 +24,5 @@ public class Plugin : BasePlugin<BasePluginConfiguration>
     public override Guid Id => Guid.Parse("b54dbd71-0824-420d-974c-b4f74ceed8f6");
 
     public override string Description =>
-        "Adds \"Untrack show\" to the episode, season and show menus in web browsers and the Jellyfin desktop app. It marks the whole show unplayed for you, which removes it from Continue Watching and Next Up.";
+        "Adds \"Untrack show\" to the episode, season and show menus in web browsers, the Jellyfin desktop app and the Jellyfin phone apps. It marks the whole show unplayed for you, which removes it from Continue Watching and Next Up.";
 }
