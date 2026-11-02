@@ -6,6 +6,8 @@ the plugin catalog.
 
 ## [Unreleased]
 
+## [1.0.3.0] – 2026-11-02
+
 ### Added
 
 - **Untrack show** asks you to confirm first, and says that every episode will be marked unwatched.

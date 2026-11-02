@@ -7,5 +7,5 @@
   "overview": "Remove a whole show from Continue Watching and Next Up in one click. Requires the File Transformation plugin.",
   "owner": "Bandar",
   "targetAbi": "12.4.0.0",
-  "version": "1.0.2.0"
+  "version": "1.0.3.0"
 }
