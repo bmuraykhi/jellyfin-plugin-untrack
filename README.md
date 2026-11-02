@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="assets/icon.png" width="96" alt="">
-
-# Untrack Show
+<img src="assets/icon.png" width="480" alt="Untrack Show">
 
 Remove a whole show from Continue Watching and Next Up in one click.
 
