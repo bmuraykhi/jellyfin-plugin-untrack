@@ -1,7 +1,3 @@
-// Untrack Show: adds "Untrack show" to the ⋮ menu of episodes, seasons and shows in jellyfin-web, and to the
-// multi-select menu (long-press on phones).
-// It marks the whole show unplayed for the signed-in user (DELETE /UserPlayedItems/{seriesId}), which
-// clears every resume point and watched mark, so the show leaves Continue Watching and Next Up.
 (function () {
     'use strict';
 
@@ -13,11 +9,8 @@
     const COMMAND_ID = 'untrackshow';
     const SUPPORTED_TYPES = ['Episode', 'Season', 'Series'];
     const MENU_BUTTONS = '[data-action="menu"], .btnCardOptions, .btnMoreCommands, .btnToggleContextMenu';
-    // The ⋮ of the multi-select bar (long-press a card; this is how phones reach the menu).
     const SELECTION_MENU_BUTTON = '.btnSelectionPanelOptions';
 
-    // The items whose menu is being opened: set by a card's ⋮ button, right-click or long-press (one item),
-    // or by the multi-select bar's ⋮ (every checked card).
     let pending = null;
 
     function cardTarget(card) {
@@ -32,7 +25,6 @@
         if (card) {
             pending = { targets: [cardTarget(card)], at: Date.now() };
         } else if (element.closest('.btnMoreCommands')) {
-            // Item details page: the item is in the URL, e.g. #/details?id=...
             const match = /[?&]id=([0-9a-f]{32})/i.exec(window.location.hash || window.location.search);
             pending = match ? { targets: [{ id: match[1], type: null }], at: Date.now() } : null;
         }
@@ -78,8 +70,6 @@
         }, 2500);
     }
 
-    // jellyfin-web persists its query results in IndexedDB (idb-keyval) and restores them on reload without
-    // refetching, so the home rows would still show the show. Drop that cache; the app rebuilds it on load.
     function clearPersistedQueries() {
         return new Promise(function (resolve) {
             let request;
@@ -89,7 +79,6 @@
                 resolve();
                 return;
             }
-            // Don't create the database if the app never made one.
             request.onupgradeneeded = function () {
                 request.transaction.abort();
             };
@@ -113,23 +102,52 @@
         });
     }
 
-    // shows: Map of seriesId -> show name.
+    function showsLabel(shows) {
+        return shows.size === 1 ? shows.values().next().value : shows.size + ' shows';
+    }
+
+    function whenClosed(sheet) {
+        const started = Date.now();
+        return new Promise(function (resolve) {
+            (function check() {
+                if (!sheet.isConnected || Date.now() - started > 2000) {
+                    resolve();
+                } else {
+                    setTimeout(check, 50);
+                }
+            })();
+        });
+    }
+
+    function confirmUntrack(shows) {
+        const one = shows.size === 1;
+        const title = 'Untrack ' + showsLabel(shows) + '?';
+        const text = 'Every episode' + (one ? '' : ' of these shows')
+            + ' will be marked unwatched for you, including the ones you\'ve finished. '
+            + (one ? 'It leaves' : 'They leave') + ' Continue Watching and Next Up until you play '
+            + (one ? 'it' : 'them') + ' again. This can\'t be undone.';
+        const dashboard = window.Dashboard;
+        if (!dashboard || typeof dashboard.confirm !== 'function') {
+            return Promise.resolve(window.confirm(title + '\n\n' + text));
+        }
+        return new Promise(function (resolve) {
+            dashboard.confirm({ title: title, text: text, confirmText: 'Untrack', primary: 'delete' }, null, resolve);
+        });
+    }
+
     async function untrack(api, userId, shows) {
-        const names = Array.from(shows.values());
-        const label = names.length === 1 ? names[0] : names.length + ' shows';
         try {
             await Promise.all(Array.from(shows.keys()).map(function (seriesId) {
                 return api.ajax({ type: 'DELETE', url: api.getUrl('UserPlayedItems/' + seriesId, { userId: userId }) });
             }));
-            toast('Untracked ' + label);
-            // Home rows don't drop cards on their own; reload with a fresh cache so Continue Watching / Next Up refresh.
+            toast('Untracked ' + showsLabel(shows));
             setTimeout(async function () {
                 await clearPersistedQueries();
                 window.location.reload();
             }, 700);
         } catch (err) {
             console.error('UntrackShow: failed', err);
-            toast('Could not untrack ' + label);
+            toast('Could not untrack ' + showsLabel(shows));
         }
     }
 
@@ -167,7 +185,6 @@
             return;
         }
 
-        // Resolve each item to its show; several selected episodes of one show count once.
         const userId = api.getCurrentUserId();
         const shows = new Map();
         await Promise.all(targets.slice(0, 100).map(async function (target) {
@@ -179,7 +196,6 @@
                     shows.set(item.SeriesId, item.SeriesName);
                 }
             } catch (err) {
-                // Not resolvable (deleted, no access): leave it out.
             }
         }));
         if (!shows.size || !sheet.isConnected || scroller.querySelector('[data-id="' + COMMAND_ID + '"]')) {
@@ -187,9 +203,11 @@
         }
 
         const option = buildOption(template, shows.size === 1 ? 'Untrack show' : 'Untrack ' + shows.size + ' shows');
-        // The action sheet closes itself on any menu-item click; this listener does the actual work.
-        option.addEventListener('click', function () {
-            untrack(api, userId, shows);
+        option.addEventListener('click', async function () {
+            await whenClosed(sheet);
+            if (await confirmUntrack(shows)) {
+                untrack(api, userId, shows);
+            }
         });
         scroller.appendChild(option);
     }

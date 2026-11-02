@@ -32,7 +32,7 @@ https://www.iamparadox.dev/jellyfin/plugins/manifest.json
 
 ## Use
 
-Open the **⋮** menu of a show, season or episode and pick **Untrack show**.
+Open the **⋮** menu of a show, season or episode, pick **Untrack show** and confirm.
 
 Untracking marks every episode of the show unwatched, for you only. To bring the show back, play any episode. Tools
 that delete unwatched media will treat an untracked show as unwatched.
@@ -44,8 +44,8 @@ disappears from them too.
 
 - File Transformation adds one `<script>` tag to Jellyfin's web page as it's served, and the plugin serves that script
   at `/UntrackShow/script`. No jellyfin-web files are changed.
-- The script adds **Untrack show** to the ⋮ menus. Picking it asks Jellyfin to mark the whole show unplayed for you
-  (`DELETE /UserPlayedItems/{showId}`), then reloads the page so the home rows update.
+- The script adds **Untrack show** to the ⋮ menus. Once you confirm, it asks Jellyfin to mark the whole show unplayed
+  for you (`DELETE /UserPlayedItems/{showId}`), then reloads the page so the home rows update.
 - It has no settings, stores nothing and only talks to your Jellyfin server.
 
 ## License

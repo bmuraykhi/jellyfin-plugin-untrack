@@ -6,6 +6,10 @@ the plugin catalog.
 
 ## [Unreleased]
 
+### Added
+
+- **Untrack show** asks you to confirm first, and says that every episode will be marked unwatched.
+
 ### Changed
 
 - New plugin logo with the plugin's name. It fills the wide plugin tile instead of being zoomed and cropped.

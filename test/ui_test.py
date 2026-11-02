@@ -313,7 +313,6 @@ def check(condition, message):
 with sync_playwright() as p:
     browser = p.chromium.launch()
 
-    # 1. Desktop screenshots: the crowded rows, and the menu with "Untrack show".
     context, page = new_page(browser, viewport={"width": 1280, "height": 720}, device_scale_factor=2)
     open_home(page)
     page.screenshot(path=f"{OUT}/before.png")
@@ -323,6 +322,14 @@ with sync_playwright() as p:
     option.hover()
     page.wait_for_timeout(300)
     page.screenshot(path=f"{OUT}/menu.png")
+    option.click()
+    dialog = page.locator(".dialog", has_text="Untrack Maple Street?")
+    dialog.wait_for(timeout=5000)
+    check("marked unwatched" in dialog.inner_text(), "untrack asks for confirmation first")
+    dialog.locator("button", has_text="Cancel").click()
+    dialog.wait_for(state="detached", timeout=5000)
+    page.wait_for_timeout(500)
+    check(not state["deletes"], "cancel leaves the show tracked")
     context.close()
 
     # 2. Phone layout: cards have no ⋮ there; a long-press starts multi-select, whose bar has the ⋮.
@@ -345,24 +352,29 @@ with sync_playwright() as p:
     check(option.inner_text().strip() == "Untrack 2 shows", "phone: two selected shows give Untrack 2 shows")
     context.close()
 
-    # 3. Demo video of the whole flow; also the functional check.
     size = {"width": 1280, "height": 720}
     context, page = new_page(browser, cursor=True, viewport=size, record_video_dir=f"{OUT}/video", record_video_size=size)
     started = time.monotonic()
     open_home(page)
     ready = time.monotonic() - started
-    pointer = glide(page, (1180, 650), (1100, 600), 200)  # start in empty space
+    pointer = glide(page, (1180, 650), (1100, 600), 200)
     page.wait_for_timeout(700)
     option, pointer = open_menu(page, maple_card(page), pointer)
     page.wait_for_timeout(500)
     pointer = glide(page, pointer, centre(option), 600)
     page.wait_for_timeout(450)
+    page.mouse.click(*pointer)
+    confirm = page.locator(".dialog button", has_text="Untrack")
+    confirm.wait_for(timeout=5000)
+    page.wait_for_timeout(1500)
+    pointer = glide(page, pointer, centre(confirm), 500)
+    page.wait_for_timeout(350)
     page.evaluate("window.__beforeUntrack = true")
     page.mouse.click(*pointer)
     page.locator("text=Untracked Maple Street").wait_for(timeout=5000)
-    page.wait_for_function("window.__beforeUntrack !== true", timeout=15000)  # the plugin reloads the page
+    page.wait_for_function("window.__beforeUntrack !== true", timeout=15000)
     wait_for_rows(page)
-    page.mouse.move(1150, 640)  # park the pointer in empty space for the final frames
+    page.mouse.move(1150, 640)
     page.wait_for_timeout(2500)
     check(state["deletes"] == [SHOWS["maple"]["id"]], "untrack sent DELETE /UserPlayedItems/{seriesId} for Maple Street")
     rows = section_cards(page)
