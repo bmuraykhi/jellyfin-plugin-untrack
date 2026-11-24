@@ -32,7 +32,8 @@ https://www.iamparadox.dev/jellyfin/plugins/manifest.json
 
 ## Use
 
-Open the **⋮** menu of a show, season or episode, pick **Untrack show** and confirm.
+Open the **⋮** menu of a show, season or episode, pick **Untrack show** and confirm. It only appears for shows you've
+watched or started.
 
 Untracking marks every episode of the show unwatched, for you only. To bring the show back, play any episode. Tools
 that delete unwatched media will treat an untracked show as unwatched.

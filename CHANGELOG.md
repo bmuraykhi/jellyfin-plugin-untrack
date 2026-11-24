@@ -6,6 +6,17 @@ the plugin catalog.
 
 ## [Unreleased]
 
+### Changed
+
+- **Untrack show** only appears for shows you've watched or started, since untracking any other show does nothing.
+- **Untrack show** sits with the other actions for you (Select, Add to playlist) instead of at the bottom of the menu,
+  below the admin items.
+
+### Fixed
+
+- File Transformation also hands some of jellyfin-web's script files to the plugin. The plugin now leaves them alone
+  instead of looking for a `</body>` in them.
+
 ## [1.0.3.0] – 2026-11-02
 
 ### Added
