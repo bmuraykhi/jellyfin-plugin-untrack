@@ -3,7 +3,6 @@ using MediaBrowser.Common.Net;
 
 namespace Jellyfin.Plugin.UntrackShow;
 
-/// <summary>Called by File Transformation whenever the web client's index.html is served.</summary>
 public static class Transformations
 {
     private const string Marker = "plugin=\"UntrackShow\"";
@@ -11,7 +10,7 @@ public static class Transformations
     public static string IndexTransformation(PatchRequestPayload payload)
     {
         string contents = payload.Contents ?? string.Empty;
-        if (contents.Contains(Marker, StringComparison.Ordinal))
+        if (!IsHtmlDocument(contents) || contents.Contains(Marker, StringComparison.Ordinal))
         {
             return contents;
         }
@@ -23,6 +22,12 @@ public static class Transformations
 
         int bodyClosing = contents.LastIndexOf("</body>", StringComparison.OrdinalIgnoreCase);
         return bodyClosing < 0 ? contents : contents.Insert(bodyClosing, script);
+    }
+
+    private static bool IsHtmlDocument(string contents)
+    {
+        var start = contents.AsSpan().TrimStart();
+        return start.Length > 0 && start[0] == '<';
     }
 }
 
