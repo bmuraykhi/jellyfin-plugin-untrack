@@ -6,6 +6,8 @@ the plugin catalog.
 
 ## [Unreleased]
 
+## [1.1.0.0] – 2026-11-24
+
 ### Changed
 
 - **Untrack show** only appears for shows you've watched or started, since untracking any other show does nothing.
