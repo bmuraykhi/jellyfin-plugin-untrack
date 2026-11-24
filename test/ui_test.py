@@ -30,6 +30,7 @@ import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qs
 
 from playwright.sync_api import sync_playwright
 
@@ -43,12 +44,11 @@ def mock_id(*parts):
     return hashlib.md5(("untrack-demo:" + ":".join(map(str, parts))).encode()).hexdigest()
 
 
-# ---- Made-up shows -------------------------------------------------------------------------------------------------
-
 SHOWS = {
     "maple": {"name": "Maple Street", "year": 2014, "minutes": 22, "colors": ("#f6b04b", "#c2410c"), "genre": "Comedy"},
     "ward": {"name": "Ward Nine", "year": 2025, "minutes": 48, "colors": ("#2dd4bf", "#0e5a63"), "genre": "Drama"},
     "orbit": {"name": "Deep Orbit", "year": 2026, "minutes": 55, "colors": ("#a78bfa", "#312e81"), "genre": "Science Fiction"},
+    "harbor": {"name": "The Quiet Harbor", "year": 2023, "minutes": 50, "colors": ("#7dd3fc", "#1e3a5f"), "genre": "Mystery"},
 }
 for key, show in SHOWS.items():
     show["key"] = key
@@ -56,7 +56,6 @@ for key, show in SHOWS.items():
 
 NOW = datetime.now(timezone.utc)
 
-# Continue Watching, most recent first: a sitcom's random episodes from different seasons crowd the row.
 RESUME = [
     ("maple", 5, 12, "The Garage Sale", 0.42),
     ("ward", 1, 7, "Night Rounds", 0.64),
@@ -70,7 +69,7 @@ NEXT_UP = [
     ("orbit", 1, 4, "Drift"),
 ]
 
-ITEMS = {}  # id -> item dto
+ITEMS = {}
 
 
 def episode(key, season, number, title, progress=0.0, played_hours_ago=None):
@@ -120,7 +119,6 @@ NEXT_UP_ITEMS = [episode(k, s, n, t) for k, s, n, t in NEXT_UP]
 
 
 def artwork(item_id, image_type):
-    """A simple generated title card (SVG) for a made-up show."""
     item = ITEMS[item_id]
     show = SHOWS[next(k for k, s in SHOWS.items() if s["id"] in (item_id, item.get("SeriesId")))]
     poster = image_type == "Primary" and item["Type"] == "Series"
@@ -142,8 +140,6 @@ def artwork(item_id, image_type):
 </svg>'''
 
 
-# ---- Request mocking ---------------------------------------------------------------------------------------------
-
 state = {"untracked": set(), "deletes": []}
 ID = r"([0-9a-f]{32})"
 
@@ -161,21 +157,34 @@ def handle(route):
     path = request.url[len(BASE):].split("?")[0] if request.url.startswith(BASE) else None
     if path is None:
         return route.continue_()
+    query = request.url.split("?", 1)[1] if "?" in request.url else ""
     if path.startswith("/Branding/Css"):
-        return route.fulfill(content_type="text/css", body="")  # stock look: no custom theme
+        return route.fulfill(content_type="text/css", body="")
     if path == "/Branding/Configuration":
         branding = route.fetch().json()
-        branding["CustomCss"] = ""  # jellyfin-web also applies the custom CSS from here
-        return json_reply(route, branding)  # stock look, no custom theme
+        branding["CustomCss"] = ""
+        return json_reply(route, branding)
     if path.startswith("/EditorsChoice/"):
-        return route.fulfill(content_type="text/javascript", body="")  # other home-page plugins stay out of the shots
+        return route.fulfill(content_type="text/javascript", body="")
     if path in ("/System/Info", "/System/Info/Public"):
         info = route.fetch().json()
-        info["ServerName"] = "Jellyfin"  # keep the real server name out of the screenshots
+        info["ServerName"] = "Jellyfin"
         return json_reply(route, info)
     if path.endswith("Items/Resume"):
         items = visible(RESUME_ITEMS)
         return json_reply(route, {"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
+    if path == "/Items" or re.match(r"^/Users/[0-9a-f]+/Items$", path):
+        params = {k.lower(): v[0] for k, v in parse_qs(query).items()}
+        parent = params.get("parentid")
+        if parent in ITEMS:
+            episodes = [] if parent in state["untracked"] else [
+                i for i in RESUME_ITEMS + NEXT_UP_ITEMS if i["SeriesId"] == parent]
+            if "IsResumable" in params.get("filters", ""):
+                episodes = [i for i in episodes if i["UserData"]["PlaybackPositionTicks"] > 0]
+            return json_reply(route, {"Items": episodes[:1], "TotalRecordCount": len(episodes), "StartIndex": 0})
+    m = re.match(rf"^/Shows/{ID}/(Seasons|Episodes)$", path)
+    if m and m.group(1) in ITEMS:
+        return json_reply(route, {"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
     if path.endswith("/Shows/NextUp"):
         items = visible(NEXT_UP_ITEMS)
         return json_reply(route, {"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
@@ -202,8 +211,6 @@ def handle(route):
     return route.continue_()
 
 
-# ---- Browser helpers ---------------------------------------------------------------------------------------------
-
 SESSION = json.dumps({"Servers": [{
     "ManualAddress": BASE, "manualAddressOnly": True, "Id": SERVER_ID, "Name": "Jellyfin",
     "LastConnectionMode": 2, "DateLastAccessed": int(time.time() * 1000),
@@ -212,7 +219,6 @@ SESSION = json.dumps({"Servers": [{
 LOGIN = (f"localStorage.setItem('jellyfin_credentials', {json.dumps(SESSION)});"
          f"localStorage.setItem('_deviceId2', {json.dumps(os.environ['JELLYFIN_DEVICE_ID'])});")
 
-# A visible mouse pointer for the demo video (headless browsers don't draw one).
 CURSOR = """window.addEventListener('DOMContentLoaded', () => {
   const c = document.createElement('div');
   c.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24"><path d="M3 2v17l4.6-4.4 3.3 7.4 3.1-1.4-3.3-7.2H17z" '
@@ -252,11 +258,10 @@ def wait_for_rows(page):
     page.locator(".card", has_text="Ward Nine").first.wait_for(timeout=45000)
     page.wait_for_load_state("networkidle")
     page.wait_for_function("window.__untrackShowLoaded === true", timeout=15000)
-    page.wait_for_timeout(800)  # let card images fade in
+    page.wait_for_timeout(800)
 
 
 def glide(page, start, end, ms=600):
-    """Move the mouse smoothly so the demo video shows the pointer travelling."""
     steps = max(1, ms // 16)
     for i in range(1, steps + 1):
         t = i / steps
@@ -319,6 +324,9 @@ with sync_playwright() as p:
     option, _ = open_menu(page, maple_card(page))
     items = page.locator(".actionSheet .actionSheetMenuItem").all_inner_texts()
     check("Untrack show" in items, f"menu offers Untrack show ({len(items)} items)")
+    if "Add to playlist" in items:
+        check(items.index("Untrack show") == items.index("Add to playlist") + 1,
+              "Untrack show comes right after Add to playlist, above the admin items")
     option.hover()
     page.wait_for_timeout(300)
     page.screenshot(path=f"{OUT}/menu.png")
@@ -332,20 +340,19 @@ with sync_playwright() as p:
     check(not state["deletes"], "cancel leaves the show tracked")
     context.close()
 
-    # 2. Phone layout: cards have no ⋮ there; a long-press starts multi-select, whose bar has the ⋮.
     phone = {k: v for k, v in p.devices["Pixel 7"].items() if k != "default_browser_type"}
     context, page = new_page(browser, **phone)
     open_home(page)
-    maple_card(page).click(button="right")  # what a long-press sends
+    maple_card(page).click(button="right")
     page.locator(".btnSelectionPanelOptions").tap()
     option = page.locator('.actionSheet [data-id="untrackshow"]')
     option.wait_for(timeout=15000)
     check(option.inner_text().strip() == "Untrack show", "phone: multi-select menu offers Untrack show")
     page.wait_for_timeout(600)
     page.screenshot(path=f"{OUT}/mobile.png", clip={"x": 0, "y": 0, "width": phone["viewport"]["width"], "height": 600})
-    page.evaluate("history.back()")  # menus close on "back"
+    page.evaluate("history.back()")
     page.locator(".actionSheet").wait_for(state="detached", timeout=5000)
-    page.locator(".card", has_text="Ward Nine").first.tap()  # in selection mode a tap toggles the card
+    page.locator(".card", has_text="Ward Nine").first.tap()
     page.locator(".itemSelectionCount", has_text="2").wait_for(timeout=5000)
     page.locator(".btnSelectionPanelOptions").tap()
     option.wait_for(timeout=15000)
@@ -394,7 +401,6 @@ with sync_playwright() as p:
     context.close()
     print(f"video: {video} (rows ready at {ready:.1f}s)")
 
-    # 4. The ⋮ on an episode's own page.
     context, page = new_page(browser, viewport={"width": 1280, "height": 720})
     state["untracked"].clear()
     page.goto(f"{BASE}/web/#/details?id={RESUME_ITEMS[0]['Id']}&serverId={SERVER_ID}")
@@ -408,7 +414,19 @@ with sync_playwright() as p:
         check(False, f"details page menu offers Untrack show ({str(err).splitlines()[0]})")
     context.close()
 
-    # Same view at 2x for the README.
+    context, page = new_page(browser, viewport={"width": 1280, "height": 720})
+    page.goto(f"{BASE}/web/#/details?id={SHOWS['harbor']['id']}&serverId={SERVER_ID}")
+    try:
+        page.locator(".btnMoreCommands:visible").first.click(timeout=30000)
+        page.locator(".actionSheet .actionSheetMenuItem").first.wait_for(timeout=15000)
+        page.wait_for_timeout(2500)
+        items = page.locator(".actionSheet .actionSheetMenuItem").all_inner_texts()
+        check(len(items) > 0 and "Untrack show" not in items, f"a show with no watch history gets no Untrack show ({len(items)} items)")
+    except Exception as err:
+        page.screenshot(path=f"{OUT}/debug-harbor.png")
+        check(False, f"a show with no watch history gets no Untrack show ({str(err).splitlines()[0]})")
+    context.close()
+
     context, page = new_page(browser, viewport={"width": 1280, "height": 720}, device_scale_factor=2)
     state["untracked"].add(SHOWS["maple"]["id"])
     page.goto(BASE + "/web/#/home")

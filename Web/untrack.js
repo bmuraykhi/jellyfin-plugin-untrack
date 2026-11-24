@@ -11,6 +11,9 @@
     const MENU_BUTTONS = '[data-action="menu"], .btnCardOptions, .btnMoreCommands, .btnToggleContextMenu';
     const SELECTION_MENU_BUTTON = '.btnSelectionPanelOptions';
     const NOTICE_KEY = 'untrackShow.notice';
+    const PLACE_AFTER = ['removefromresume', 'removefromnextup', 'markplayed', 'markunplayed'];
+    const PLACE_BEFORE = ['download', 'downloadall', 'copy-stream', 'delete', 'edit', 'editimages', 'editsubtitles',
+        'identify', 'moremediainfo', 'refresh'];
 
     let pending = null;
 
@@ -195,6 +198,55 @@
         return option;
     }
 
+    function hasOwnHistory(item) {
+        const data = item && item.UserData;
+        return !!data && (data.Played === true || data.PlaybackPositionTicks > 0 || data.PlayedPercentage > 0);
+    }
+
+    async function hasWatchHistory(api, userId, seriesId) {
+        function firstEpisode(filter) {
+            return api.ajax({
+                type: 'GET',
+                dataType: 'json',
+                url: api.getUrl('Items', {
+                    userId: userId, parentId: seriesId, recursive: true, includeItemTypes: 'Episode', filters: filter,
+                    limit: 1, enableTotalRecordCount: false, enableUserData: false, enableImages: false
+                })
+            });
+        }
+        try {
+            const results = await Promise.all([firstEpisode('IsPlayed'), firstEpisode('IsResumable')]);
+            return results.some(function (r) {
+                return r && Array.isArray(r.Items) && r.Items.length > 0;
+            });
+        } catch (err) {
+            return true;
+        }
+    }
+
+    function placeOption(scroller, option) {
+        const items = Array.from(scroller.querySelectorAll('.actionSheetMenuItem'));
+        const idOf = function (item) {
+            return item.getAttribute('data-id');
+        };
+        const after = items.filter(function (item) {
+            return PLACE_AFTER.indexOf(idOf(item)) !== -1;
+        }).pop();
+        if (after) {
+            after.after(option);
+            return;
+        }
+        const before = items.find(function (item) {
+            return PLACE_BEFORE.indexOf(idOf(item)) !== -1;
+        });
+        if (before) {
+            const divider = before.previousElementSibling;
+            (divider && divider.classList.contains('actionsheetDivider') ? divider : before).before(option);
+        } else {
+            scroller.appendChild(option);
+        }
+    }
+
     async function addOption(sheet) {
         const request = pending;
         if (!request || Date.now() - request.at > 3000) {
@@ -211,17 +263,34 @@
         }
 
         const userId = api.getCurrentUserId();
-        const shows = new Map();
+        const found = new Map();
+        const watched = new Set();
         await Promise.all(targets.slice(0, 100).map(async function (target) {
             try {
                 const item = await api.getItem(userId, target.id);
+                let seriesId = null;
                 if (item.Type === 'Series') {
-                    shows.set(item.Id, item.Name);
+                    seriesId = item.Id;
+                    found.set(seriesId, item.Name);
                 } else if (item.SeriesId && SUPPORTED_TYPES.indexOf(item.Type) !== -1) {
-                    shows.set(item.SeriesId, item.SeriesName);
+                    seriesId = item.SeriesId;
+                    found.set(seriesId, item.SeriesName);
+                }
+                if (seriesId && hasOwnHistory(item)) {
+                    watched.add(seriesId);
                 }
             } catch (err) {
             }
+        }));
+        await Promise.all(Array.from(found.keys()).filter(function (id) {
+            return !watched.has(id);
+        }).map(async function (id) {
+            if (await hasWatchHistory(api, userId, id)) {
+                watched.add(id);
+            }
+        }));
+        const shows = new Map(Array.from(found).filter(function (entry) {
+            return watched.has(entry[0]);
         }));
         if (!shows.size || !sheet.isConnected || scroller.querySelector('[data-id="' + COMMAND_ID + '"]')) {
             return;
@@ -234,7 +303,7 @@
                 untrack(api, userId, shows);
             }
         });
-        scroller.appendChild(option);
+        placeOption(scroller, option);
     }
 
     new MutationObserver(function (mutations) {
